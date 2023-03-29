@@ -1,0 +1,9 @@
+{
+  "name": "Styles to Variables",
+  "id": "9977",
+  "api": "1.0.0",
+  "editorType": ["figma"],
+  "permissions": [],
+  "main": "code.js",
+  "enableProposedApi": true
+}
