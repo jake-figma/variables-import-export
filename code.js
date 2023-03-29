@@ -10,19 +10,25 @@ function createTokens(tokenData) {
     figma.notify("No convertible styles found. :(");
     return;
   }
-  const collection = figma.variables.createVariableCollection(
-    `Style Token Migration: ${Date.now()}`
-  );
+  const collection = figma.variables.createVariableCollection(`Style Tokens`);
+  let aliasCollection;
   const modeId = collection.modes[0].modeID;
+  // collection.renameMode(modeId, "Style");
   console.log(tokenData);
   tokenData.forEach(({ color, hex, opacity, tokens }) => {
     if (tokens.length > 1) {
+      aliasCollection =
+        aliasCollection ||
+        figma.variables.createVariableCollection(`Style Tokens: Aliased`);
+      // aliasCollection.renameMode(aliasCollection.modes[0].modeID, "Style")
+      const opacityName =
+        opacity === 1 ? "" : ` (${Math.round(opacity * 100)}%)`;
       const parentToken = figma.variables.createVariable(
-        `${hex}-${opacity}`,
-        collection.id,
+        `${hex.toUpperCase()}${opacityName}`,
+        aliasCollection.id,
         "COLOR"
       );
-      parentToken.setValueForMode(modeId, {
+      parentToken.setValueForMode(aliasCollection.modes[0].modeID, {
         r: color.r,
         g: color.g,
         b: color.b,
