@@ -1,9 +1,10 @@
 {
-  "name": "Styles to Variables",
-  "id": "9977",
+  "name": "Variables Import Export",
+  "id": "99779",
   "api": "1.0.0",
   "editorType": ["figma"],
   "permissions": [],
   "main": "code.js",
+  "ui": "index.html",
   "enableProposedApi": true
 }
