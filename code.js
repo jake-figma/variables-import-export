@@ -130,15 +130,7 @@ function exportToJSON() {
   collections.forEach((collection) =>
     files.push(...processCollection(collection))
   );
-  figma.showUI(
-    files
-      .map(
-        ({ fileName, body }) =>
-          `<p>${fileName}</p><pre>${JSON.stringify(body, null, 2)}</pre>`
-      )
-      .join(""),
-    { width: 500, height: 500 }
-  );
+  figma.ui.postMessage({ type: "EXPORT_RESULT", files });
 }
 
 function processCollection({ name, modes, variableIds }) {
@@ -170,8 +162,16 @@ function processCollection({ name, modes, variableIds }) {
   return files;
 }
 
-importJSONFile(exampleJSONAnnoyingVariance());
-exportToJSON();
+figma.ui.onmessage = (e) => {
+  console.log("code received message", e);
+  if (e.type === "IMPORT") {
+    const { fileName, body } = e;
+    importJSONFile({ fileName, body });
+  } else if (e.type === "EXPORT") {
+    exportToJSON();
+  }
+};
+figma.showUI(__html__, { width: 500, height: 500 });
 
 function exampleJSONAnnoyingVariance() {
   return {

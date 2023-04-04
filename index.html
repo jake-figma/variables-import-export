@@ -1,0 +1,82 @@
+<style></style>
+<form>
+  <input required type="text" value="Wild Examples" />
+  <textarea required>
+{
+  "color": {
+    "grouptyped": {
+      "$type": "color",
+      "brown": { "$value": "#a2845e" },
+      "danger-deep": { "$value": "{color.valuetyped.danger}" }
+    },
+    "valuetyped": {
+      "red": {
+        "$value": "{color.deep.deep.deep.deep.deep}"
+      },
+      "danger": { "$value": "{color.valuetyped.red}" }
+    },
+    "deep": {"deep": {"deep": {"deep": {"deep": {"$type": "color", "$value": "#FF0000" }}}}}
+  },
+  "spacing": {
+    "$type": "number",
+    "some numbers": {
+      "spacer0": {"$value": 0},
+      "spacerXs": {"$value": 4},
+      "spacerS": {"$value": 8},
+      "spacerM": {"$value": 16},
+      "spacerX": {"$value": 24},
+      "spacerXl": {"$value": 32},
+      "spacerXxl": {"$value": 40},
+      "spacex": {
+        "funniness": {"$value": 0},
+        "cleverness": {"$value": 1}
+      }
+    }
+  }
+}
+</textarea
+  >
+  <button type="submit">Import Tokens</button>
+</form>
+
+<pre></pre>
+<button id="export" type="button">Export Tokens</button>
+
+<script>
+  window.onmessage = ({ data: { pluginMessage } }) => {
+    if (pluginMessage.type === "EXPORT_RESULT") {
+      document.querySelector("pre").innerHTML = pluginMessage.files
+        .map(
+          ({ fileName, body }) =>
+            `// ${fileName}\n${JSON.stringify(body, null, 2)}`
+        )
+        .join("\n\n");
+    }
+  };
+
+  document.querySelector("form").addEventListener("submit", (e) => {
+    const fileName = document.querySelector("input").value.trim();
+    const body = document.querySelector("textarea").value.trim();
+    e.preventDefault();
+    if (isValidJSON(body) && fileName) {
+      parent.postMessage(
+        { pluginMessage: { fileName, body, type: "IMPORT" } },
+        "*"
+      );
+    } else {
+      alert("Invalid filename or JSON");
+    }
+  });
+  document.getElementById("export").addEventListener("click", () => {
+    parent.postMessage({ pluginMessage: { type: "EXPORT" } }, "*");
+  });
+
+  function isValidJSON(body) {
+    try {
+      JSON.parse(body);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+</script>
