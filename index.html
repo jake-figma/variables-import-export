@@ -1,7 +1,43 @@
-<style></style>
+<style>
+  :root {
+    --spacing: 0.5rem;
+  }
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    padding: var(--spacing);
+  }
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing);
+  }
+  button,
+  pre,
+  form > * {
+    display: block;
+    width: 100%;
+  }
+  textarea {
+    height: 25vh;
+    padding: var(--spacing);
+  }
+  pre {
+    background: #f0f0f0;
+    min-height: 25vh;
+    padding: var(--spacing);
+  }
+</style>
 <form>
-  <input required type="text" value="Wild Examples" />
-  <textarea required>
+  <input
+    placeholder="Collection Name"
+    required
+    type="text"
+    value="Wild Examples"
+  />
+  <textarea required placeholder="Tokens JSON">
 {
   "color": {
     "grouptyped": {
@@ -39,8 +75,8 @@
   <button type="submit">Import Tokens</button>
 </form>
 
-<pre></pre>
 <button id="export" type="button">Export Tokens</button>
+<pre>export will go here...</pre>
 
 <script>
   window.onmessage = ({ data: { pluginMessage } }) => {
