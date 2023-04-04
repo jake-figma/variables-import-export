@@ -171,7 +171,11 @@ figma.ui.onmessage = (e) => {
     exportToJSON();
   }
 };
-figma.showUI(__html__, { width: 500, height: 500 });
+if (figma.command === "import") {
+  figma.showUI(__uiFiles__['import'], { width: 500, height: 500, themeColors: true });
+} else if (figma.command === "export") {
+  figma.showUI(__uiFiles__['export'], { width: 500, height: 500, themeColors: true });
+}
 
 function exampleJSONAnnoyingVariance() {
   return {

@@ -1,0 +1,88 @@
+<style>
+  :root {
+    --spacing: 0.8rem;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    background-color: var(--figma-color-bg);
+    color: var(--figma-color-text);
+    margin: 0;
+    padding: var(--spacing);
+  }
+
+  html,
+  body,
+  main {
+    height: 100%;
+  }
+
+  main {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing);
+  }
+
+  button {
+    appearance: none;
+    border-radius: 4px;
+    padding: var(--spacing);
+  }
+
+  pre {
+    font-family: Andale Mono, monospace;
+    font-size: 0.9rem;
+    white-space: pre;
+  }
+
+  button,
+  pre {
+    display: block;
+    width: 100%;
+  }
+
+  button {
+    background-color: var(--figma-color-bg-brand);
+    border: none;
+    color: var(--figma-color-text-onbrand);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+      Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue",
+      sans-serif;
+    font-weight: bold;
+  }
+
+  pre {
+    background-color: var(--figma-color-bg-secondary);
+    color: var(--figma-color-text-secondary);
+    flex: 1;
+    margin: 0;
+    overflow: auto;
+    padding: var(--spacing);
+  }
+
+  #export {
+    background-color: var(--figma-color-bg-component);
+  }
+</style>
+<main>
+  <button id="export" type="button">Export Tokens</button>
+  <pre>Exported Tokens will Render Here...</pre>
+</main>
+<script>
+  window.onmessage = ({ data: { pluginMessage } }) => {
+    if (pluginMessage.type === "EXPORT_RESULT") {
+      document.querySelector("pre").innerHTML = pluginMessage.files
+        .map(
+          ({ fileName, body }) =>
+            `/* ${fileName} */\n\n${JSON.stringify(body, null, 2)}`
+        )
+        .join("\n\n\n");
+    }
+  };
+  document.getElementById("export").addEventListener("click", () => {
+    parent.postMessage({ pluginMessage: { type: "EXPORT" } }, "*");
+  });
+</script>

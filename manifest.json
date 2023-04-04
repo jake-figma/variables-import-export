@@ -5,6 +5,10 @@
   "editorType": ["figma"],
   "permissions": [],
   "main": "code.js",
-  "ui": "index.html",
+  "menu": [
+    { "command": "import", "name": "Import Design Token" },
+    { "command": "export", "name": "Export Design Token" }
+  ],
+  "ui": { "import": "import.html", "export": "export.html" },
   "enableProposedApi": true
 }
