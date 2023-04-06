@@ -172,9 +172,17 @@ figma.ui.onmessage = (e) => {
   }
 };
 if (figma.command === "import") {
-  figma.showUI(__uiFiles__['import'], { width: 500, height: 500, themeColors: true });
+  figma.showUI(__uiFiles__["import"], {
+    width: 500,
+    height: 500,
+    themeColors: true,
+  });
 } else if (figma.command === "export") {
-  figma.showUI(__uiFiles__['export'], { width: 500, height: 500, themeColors: true });
+  figma.showUI(__uiFiles__["export"], {
+    width: 500,
+    height: 500,
+    themeColors: true,
+  });
 }
 
 function exampleJSONAnnoyingVariance() {
@@ -415,7 +423,12 @@ function exampleJSONGithub() {
   };
 }
 
-function rgbToHex({ r, g, b }) {
+function rgbToHex({ r, g, b, a }) {
+  if (a !== 1) {
+    return `rgba(${[r, g, b]
+      .map((n) => Math.round(n * 255))
+      .join(", ")}, ${a.toFixed(4)})`;
+  }
   const toHex = (value) => {
     const hex = Math.round(value * 255).toString(16);
     return hex.length === 1 ? "0" + hex : hex;
