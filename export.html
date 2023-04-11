@@ -32,14 +32,24 @@
     padding: var(--spacing);
   }
 
-  pre {
+  textarea {
+    background-color: var(--figma-color-bg-secondary);
+    border: 2px solid var(--figma-color-border);
+    color: var(--figma-color-text-secondary);
+    flex: 1;
     font-family: Andale Mono, monospace;
     font-size: 0.9rem;
+    overflow: auto;
+    padding: var(--spacing);
     white-space: pre;
+  }
+  textarea:focus {
+    border-color: var(--figma-color-border-selected);
+    outline: none;
   }
 
   button,
-  pre {
+  textarea {
     display: block;
     width: 100%;
   }
@@ -54,27 +64,21 @@
     font-weight: bold;
   }
 
-  pre {
-    background-color: var(--figma-color-bg-secondary);
-    color: var(--figma-color-text-secondary);
-    flex: 1;
-    margin: 0;
-    overflow: auto;
-    padding: var(--spacing);
-  }
-
   #export {
     background-color: var(--figma-color-bg-component);
   }
 </style>
 <main>
   <button id="export" type="button">Export Variables</button>
-  <pre>Exported variables will render here...</pre>
+  <textarea
+    placeholder="Exported variables will render here..."
+    readonly
+  ></textarea>
 </main>
 <script>
   window.onmessage = ({ data: { pluginMessage } }) => {
     if (pluginMessage.type === "EXPORT_RESULT") {
-      document.querySelector("pre").innerHTML = pluginMessage.files
+      document.querySelector("textarea").innerHTML = pluginMessage.files
         .map(
           ({ fileName, body }) =>
             `/* ${fileName} */\n\n${JSON.stringify(body, null, 2)}`
