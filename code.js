@@ -1,13 +1,33 @@
 console.clear();
 
 function createCollection(name) {
+  const localVariableCollections = figma.variables.getLocalVariableCollections();
+  for (const collection of localVariableCollections) {
+    console.log(collection);
+    if (collection.name === name) {
+      const modeId = collection.modes[0].modeID;
+      return { collection, modeId };
+    }
+  }
+
   const collection = figma.variables.createVariableCollection(name);
   const modeId = collection.modes[0].modeID;
   return { collection, modeId };
 }
 
 function createToken(collection, modeId, type, name, value) {
-  const token = figma.variables.createVariable(name, collection.id, type);
+  const localVariables = figma.variables.getLocalVariables();
+  let token = undefined;
+  for (const variable of localVariables) {
+    if (variable.name === name && variable.variableCollectionId === collection.id) {
+      token = figma.variables.getVariableById(variable.id)
+    }
+  }
+  
+  if (!token) {
+    token = figma.variables.createVariable(name, collection.id, type);
+  }
+
   token.setValueForMode(modeId, value);
   return token;
 }
