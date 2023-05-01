@@ -1,7 +1,8 @@
 console.clear();
 
 function createCollection(name) {
-  const localVariableCollections = figma.variables.getLocalVariableCollections();
+  const localVariableCollections =
+    figma.variables.getLocalVariableCollections();
   for (const collection of localVariableCollections) {
     console.log(collection);
     if (collection.name === name) {
@@ -19,11 +20,14 @@ function createToken(collection, modeId, type, name, value) {
   const localVariables = figma.variables.getLocalVariables();
   let token = undefined;
   for (const variable of localVariables) {
-    if (variable.name === name && variable.variableCollectionId === collection.id) {
-      token = figma.variables.getVariableById(variable.id)
+    if (
+      variable.name === name &&
+      variable.variableCollectionId === collection.id
+    ) {
+      token = figma.variables.getVariableById(variable.id);
     }
   }
-  
+
   if (!token) {
     token = figma.variables.createVariable(name, collection.id, type);
   }
@@ -37,6 +41,25 @@ function createVariable(collection, modeId, key, valueKey, tokens) {
   return createToken(collection, modeId, token.resolvedType, key, {
     type: "VARIABLE_ID",
     id: `${token.id}`,
+  });
+}
+
+function getExistingCollectionsAndModes() {
+  let collections = {};
+  const localCollections = figma.variables.getLocalVariableCollections();
+  for (let collection of localCollections) {
+    // NOTE: DOING THIS SINCE COLLECTION PROPS ARENT ON OWN PROPERTIES
+    collections[collection.name] = {
+      name: collection.name,
+      id: collection.id,
+      defaultModeId: collection.defaultModeId,
+      modes: collection.modes,
+    };
+  }
+
+  figma.ui.postMessage({
+    type: "LOAD_COLLECTIONS",
+    collections: Object(collections),
   });
 }
 
@@ -197,6 +220,7 @@ if (figma.command === "import") {
     height: 500,
     themeColors: true,
   });
+  getExistingCollectionsAndModes();
 } else if (figma.command === "export") {
   figma.showUI(__uiFiles__["export"], {
     width: 500,
