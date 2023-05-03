@@ -144,6 +144,12 @@
         newOption.value = name;
         newOption.text = name;
         newOption.dataset.id = collection.id;
+        if (collection.id === message.lastCollectionId) {
+          newOption.selected = true;
+          hideInputElement(collectionInput, collection.name);
+          loadModes(collection);
+        }
+
         collectionOptions.push(newOption);
       }
     }
@@ -176,6 +182,26 @@
     clearMode();
   }
 
+  function loadModes(collection) {
+    // load modes
+    modeSelect.length = 0;
+    modeSelect.append(newModeOption.cloneNode(true));
+    const defaultModeId = collection.defaultModeId;
+    // load modes
+    collection.modes.forEach((element) => {
+      let newOption = document.createElement("option");
+      newOption.text = element.name;
+      newOption.value = element.name;
+      newOption.dataset.id = element.modeID;
+      modeSelect.append(newOption);
+      if (element.modeID === defaultModeId) {
+        newOption.selected = true;
+        newOption.text = `${element.name} (Default Mode)`;
+        hideInputElement(modeInput, element.name);
+      }
+    });
+  }
+
   function handleCollectionChange(event) {
     // handle the case if it's a new Collection
     console.log(`Event: ${event.target.value}`);
@@ -186,23 +212,7 @@
       clearCollection();
     } else {
       hideInputElement(collectionInput, event.target.value);
-      // load modes
-      modeSelect.length = 0;
-      modeSelect.append(newModeOption.cloneNode(true));
-      const defaultModeId = currentCollection.defaultModeId;
-      // load modes
-      currentCollection.modes.forEach((element) => {
-        let newOption = document.createElement("option");
-        newOption.text = element.name;
-        newOption.value = element.name;
-        newOption.dataset.id = element.modeID;
-        modeSelect.append(newOption);
-        if (element.modeID === defaultModeId) {
-          newOption.selected = true;
-          newOption.text = `${element.name} (Default Mode)`;
-          hideInputElement(modeInput, element.name);
-        }
-      });
+      loadModes(currentCollection);
     }
   }
 

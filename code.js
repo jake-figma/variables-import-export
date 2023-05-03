@@ -6,15 +6,13 @@ function createCollection(selectedCollection, selectedMode) {
     const collection = figma.variables.getVariableCollectionById(
       selectedCollection.id
     );
-
-    console.log(selectedMode);
-
     let modeId = selectedMode.id;
     // mode exists
     if (modeId) {
       return { collection, modeId };
     }
 
+    // otherwise create new mode
     const newMode = collection.addMode(selectedMode.name);
     return { collection, modeId: newMode };
   }
@@ -58,32 +56,46 @@ function createVariable(collection, modeId, key, valueKey, tokens) {
 
 function getExistingCollectionsAndModes() {
   let collections = {};
-  const localCollections = figma.variables.getLocalVariableCollections();
-  for (let collection of localCollections) {
-    // NOTE: DOING THIS SINCE COLLECTION PROPS ARENT ON OWN PROPERTIES
-    collections[collection.name] = {
-      name: collection.name,
-      id: collection.id,
-      defaultModeId: collection.defaultModeId,
-      modes: collection.modes,
-    };
-  }
+  figma.clientStorage.getAsync("lastCollectionId").then((data) => {
+    const lastCollectionId = data;
+    let lastCollectionExists = false;
+    const localCollections = figma.variables.getLocalVariableCollections();
 
-  figma.ui.postMessage({
-    type: "LOAD_COLLECTIONS",
-    collections: Object(collections),
+    for (let collection of localCollections) {
+      // NOTE: DOING THIS SINCE COLLECTION PROPS ARENT ON OWN PROPERTIES
+      if (collection.id === lastCollectionId) {
+        lastCollectionExists = true;
+      }
+      collections[collection.name] = {
+        name: collection.name,
+        id: collection.id,
+        defaultModeId: collection.defaultModeId,
+        modes: collection.modes,
+      };
+    }
+
+    figma.ui.postMessage({
+      type: "LOAD_COLLECTIONS",
+      collections: Object(collections),
+      lastCollectionId: lastCollectionExists ? lastCollectionId : null,
+    });
   });
 }
 
 function importJSONFile({ selectedCollection, selectedMode, body }) {
   const json = JSON.parse(body);
   console.log("IMPORT");
-  console.log(selectedCollection);
-  console.log("IMPORT STOP");
   const { collection, modeId } = createCollection(
     selectedCollection,
     selectedMode
   );
+
+  figma.clientStorage
+    .setAsync("lastCollectionId", collection.id)
+    .then((result) => {
+      console.log(`SAVED COLLECTION ID: ${collection.id}`);
+    });
+
   const aliases = {};
   const tokens = {};
   Object.entries(json).forEach(([key, object]) => {
