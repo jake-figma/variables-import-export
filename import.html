@@ -135,6 +135,7 @@
     let collectionOptions = [];
 
     if (message.type === "LOAD_COLLECTIONS") {
+      // TODO: update collection list when making changes
       for (let name in message.collections) {
         let collection = message.collections[name];
         collections[name] = collection;
@@ -150,16 +151,27 @@
     collectionSelect.append(...collectionOptions);
   };
 
+  function hideInputElement(inputElement, value) {
+    inputElement.style.display = "none";
+    // handle the case if it's an existing mode
+    inputElement.value = value;
+    // disable input
+    inputElement.disabled = true;
+  }
+
+  function showInputElement(inputElement) {
+    inputElement.style.display = "block";
+    inputElement.disabled = false;
+    inputElement.value = "";
+  }
+
   function clearMode() {
     modeSelect.length = 0;
     modeSelect.append(newModeOption.cloneNode(true));
-    modeInput.disabled = false;
-    modeInput.value = "";
+    showInputElement(modeInput);
   }
 
   function clearCollection() {
-    collectionInput.value = "";
-    collectionInput.disabled = false;
     collectionInput.focus();
     clearMode();
   }
@@ -170,12 +182,10 @@
     let currentCollection = collections[event.target.value];
     // enable input
     if (event.target.value === "new") {
+      showInputElement(collectionInput);
       clearCollection();
     } else {
-      // handle the case if it's an existing Collection
-      collectionInput.value = currentCollection.name;
-      // disable input
-      collectionInput.disabled = true;
+      hideInputElement(collectionInput, event.target.value);
       // load modes
       modeSelect.length = 0;
       modeSelect.append(newModeOption.cloneNode(true));
@@ -190,8 +200,7 @@
         if (element.modeID === defaultModeId) {
           newOption.selected = true;
           newOption.text = `${element.name} (Default Mode)`;
-          modeInput.value = element.name;
-          modeInput.disabled = true;
+          hideInputElement(modeInput, element.name);
         }
       });
     }
@@ -200,14 +209,10 @@
   function handleModeChange(event) {
     // enable input
     if (event.target.value === "new") {
-      modeInput.value = "";
-      modeInput.disabled = false;
+      showInputElement(modeInput);
       modeInput.focus();
     } else {
-      // handle the case if it's an existing mode
-      modeInput.value = event.target.value;
-      // disable input
-      modeInput.disabled = true;
+      hideInputElement(modeInput, event.target.value);
     }
   }
 
