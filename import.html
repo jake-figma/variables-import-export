@@ -121,7 +121,7 @@
 </form>
 
 <script>
-  let collections = {};
+  const collections = {};
   const collectionSelect = document.querySelector("#collectionSelect");
   const collectionInput = document.querySelector("#collectionInput");
   const modeSelect = document.querySelector("#modeSelect");
@@ -215,12 +215,30 @@
   modeSelect.addEventListener("change", handleModeChange);
 
   document.querySelector("form").addEventListener("submit", (e) => {
-    const fileName = document.querySelector("input").value.trim();
+    const selectedCollection = {
+      name: document.querySelector("#collectionInput").value.trim(),
+      id: collectionSelect.selectedOptions
+        ? collectionSelect.selectedOptions[0].dataset.id
+        : null,
+    };
+    const selectedMode = {
+      name: document.querySelector("#modeInput").value.trim(),
+      id: modeSelect.selectedOptions
+        ? modeSelect.selectedOptions[0].dataset.id
+        : null,
+    };
     const body = document.querySelector("textarea").value.trim();
     e.preventDefault();
-    if (isValidJSON(body) && fileName) {
+    if (isValidJSON(body) && selectedCollection.name) {
       parent.postMessage(
-        { pluginMessage: { fileName, body, type: "IMPORT" } },
+        {
+          pluginMessage: {
+            selectedCollection,
+            selectedMode,
+            body,
+            type: "IMPORT",
+          },
+        },
         "*"
       );
     } else {

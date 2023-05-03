@@ -1,18 +1,30 @@
 console.clear();
 
-function createCollection(name) {
-  const localVariableCollections =
-    figma.variables.getLocalVariableCollections();
-  for (const collection of localVariableCollections) {
-    console.log(collection);
-    if (collection.name === name) {
-      const modeId = collection.modes[0].modeID;
+function createCollection(selectedCollection, selectedMode) {
+  // collection exists
+  if (selectedCollection.id) {
+    const collection = figma.variables.getVariableCollectionById(
+      selectedCollection.id
+    );
+
+    console.log(selectedMode);
+
+    let modeId = selectedMode.id;
+    // mode exists
+    if (modeId) {
       return { collection, modeId };
     }
+
+    const newMode = collection.addMode(selectedMode.name);
+    return { collection, modeId: newMode };
   }
 
-  const collection = figma.variables.createVariableCollection(name);
+  // collection doesn't exist, so mode doesn't exist
+  const collection = figma.variables.createVariableCollection(
+    selectedCollection.name
+  );
   const modeId = collection.modes[0].modeID;
+  collection.renameMode(modeId, selectedMode.name);
   return { collection, modeId };
 }
 
@@ -63,9 +75,15 @@ function getExistingCollectionsAndModes() {
   });
 }
 
-function importJSONFile({ fileName, body }) {
+function importJSONFile({ selectedCollection, selectedMode, body }) {
   const json = JSON.parse(body);
-  const { collection, modeId } = createCollection(fileName);
+  console.log("IMPORT");
+  console.log(selectedCollection);
+  console.log("IMPORT STOP");
+  const { collection, modeId } = createCollection(
+    selectedCollection,
+    selectedMode
+  );
   const aliases = {};
   const tokens = {};
   Object.entries(json).forEach(([key, object]) => {
@@ -208,8 +226,9 @@ function processCollection({ name, modes, variableIds }) {
 figma.ui.onmessage = (e) => {
   console.log("code received message", e);
   if (e.type === "IMPORT") {
-    const { fileName, body } = e;
-    importJSONFile({ fileName, body });
+    const { selectedCollection, selectedMode, body } = e;
+    importJSONFile({ selectedCollection, selectedMode, body });
+    // TODO: update plugin data after import - i.e. maintain state
   } else if (e.type === "EXPORT") {
     exportToJSON();
   }
