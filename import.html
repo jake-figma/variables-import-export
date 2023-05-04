@@ -62,12 +62,26 @@
   }
 </style>
 <form>
+  <label for="collectionSelect"></label>
+  <select name="collectionSelect" id="collectionSelect">
+    <option value="new">Create a New Collection</option>
+  </select>
+
   <input
     placeholder="Collection Name"
     required
     type="text"
-    value="Wild Examples"
+    value=""
+    id="collectionInput"
   />
+
+  <label for="modeSelect"></label>
+  <select name="modeSelect" id="modeSelect">
+    <option value="new">Create a New Mode</option>
+  </select>
+
+  <input placeholder="Mode Name" required type="text" value="" id="modeInput" />
+
   <textarea required placeholder="Tokens JSON">
 {
   "color": {
@@ -107,13 +121,139 @@
 </form>
 
 <script>
+  const collections = {};
+  const collectionSelect = document.querySelector("#collectionSelect");
+  const collectionInput = document.querySelector("#collectionInput");
+  const modeSelect = document.querySelector("#modeSelect");
+  const newModeOption = document.createElement("option");
+  const modeInput = document.querySelector("#modeInput");
+  newModeOption.value = "new";
+  newModeOption.text = "Create a New Mode";
+
+  window.onmessage = (event) => {
+    let message = event.data.pluginMessage;
+    let collectionOptions = [];
+
+    if (message.type === "LOAD_COLLECTIONS") {
+      // TODO: update collection list when making changes
+      for (let name in message.collections) {
+        let collection = message.collections[name];
+        collections[name] = collection;
+
+        const newOption = document.createElement("option");
+        newOption.value = name;
+        newOption.text = name;
+        newOption.dataset.id = collection.id;
+        if (collection.id === message.lastCollectionId) {
+          newOption.selected = true;
+          hideInputElement(collectionInput, collection.name);
+          loadModes(collection);
+        }
+
+        collectionOptions.push(newOption);
+      }
+    }
+
+    collectionSelect.append(...collectionOptions);
+  };
+
+  function hideInputElement(inputElement, value) {
+    inputElement.style.display = "none";
+    // handle the case if it's an existing mode
+    inputElement.value = value;
+    // disable input
+    inputElement.disabled = true;
+  }
+
+  function showInputElement(inputElement) {
+    inputElement.style.display = "block";
+    inputElement.disabled = false;
+    inputElement.value = "";
+  }
+
+  function clearMode() {
+    modeSelect.length = 0;
+    modeSelect.append(newModeOption.cloneNode(true));
+    showInputElement(modeInput);
+  }
+
+  function clearCollection() {
+    collectionInput.focus();
+    clearMode();
+  }
+
+  function loadModes(collection) {
+    // load modes
+    modeSelect.length = 0;
+    modeSelect.append(newModeOption.cloneNode(true));
+    const defaultModeId = collection.defaultModeId;
+    // load modes
+    collection.modes.forEach((element) => {
+      let newOption = document.createElement("option");
+      newOption.text = element.name;
+      newOption.value = element.name;
+      newOption.dataset.id = element.modeID;
+      modeSelect.append(newOption);
+      if (element.modeID === defaultModeId) {
+        newOption.selected = true;
+        newOption.text = `${element.name} (Default Mode)`;
+        hideInputElement(modeInput, element.name);
+      }
+    });
+  }
+
+  function handleCollectionChange(event) {
+    // handle the case if it's a new Collection
+    console.log(`Event: ${event.target.value}`);
+    let currentCollection = collections[event.target.value];
+    // enable input
+    if (event.target.value === "new") {
+      showInputElement(collectionInput);
+      clearCollection();
+    } else {
+      hideInputElement(collectionInput, event.target.value);
+      loadModes(currentCollection);
+    }
+  }
+
+  function handleModeChange(event) {
+    // enable input
+    if (event.target.value === "new") {
+      showInputElement(modeInput);
+      modeInput.focus();
+    } else {
+      hideInputElement(modeInput, event.target.value);
+    }
+  }
+
+  collectionSelect.addEventListener("change", handleCollectionChange);
+  modeSelect.addEventListener("change", handleModeChange);
+
   document.querySelector("form").addEventListener("submit", (e) => {
-    const fileName = document.querySelector("input").value.trim();
+    const selectedCollection = {
+      name: document.querySelector("#collectionInput").value.trim(),
+      id: collectionSelect.selectedOptions
+        ? collectionSelect.selectedOptions[0].dataset.id
+        : null,
+    };
+    const selectedMode = {
+      name: document.querySelector("#modeInput").value.trim(),
+      id: modeSelect.selectedOptions
+        ? modeSelect.selectedOptions[0].dataset.id
+        : null,
+    };
     const body = document.querySelector("textarea").value.trim();
     e.preventDefault();
-    if (isValidJSON(body) && fileName) {
+    if (isValidJSON(body) && selectedCollection.name) {
       parent.postMessage(
-        { pluginMessage: { fileName, body, type: "IMPORT" } },
+        {
+          pluginMessage: {
+            selectedCollection,
+            selectedMode,
+            body,
+            type: "IMPORT",
+          },
+        },
         "*"
       );
     } else {

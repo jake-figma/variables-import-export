@@ -1,13 +1,47 @@
 console.clear();
 
-function createCollection(name) {
-  const collection = figma.variables.createVariableCollection(name);
+function createCollection(selectedCollection, selectedMode) {
+  // collection exists
+  if (selectedCollection.id) {
+    const collection = figma.variables.getVariableCollectionById(
+      selectedCollection.id
+    );
+    let modeId = selectedMode.id;
+    // mode exists
+    if (modeId) {
+      return { collection, modeId };
+    }
+
+    // otherwise create new mode
+    const newMode = collection.addMode(selectedMode.name);
+    return { collection, modeId: newMode };
+  }
+
+  // collection doesn't exist, so mode doesn't exist
+  const collection = figma.variables.createVariableCollection(
+    selectedCollection.name
+  );
   const modeId = collection.modes[0].modeID;
+  collection.renameMode(modeId, selectedMode.name);
   return { collection, modeId };
 }
 
 function createToken(collection, modeId, type, name, value) {
-  const token = figma.variables.createVariable(name, collection.id, type);
+  const localVariables = figma.variables.getLocalVariables();
+  let token = undefined;
+  for (const variable of localVariables) {
+    if (
+      variable.name === name &&
+      variable.variableCollectionId === collection.id
+    ) {
+      token = figma.variables.getVariableById(variable.id);
+    }
+  }
+
+  if (!token) {
+    token = figma.variables.createVariable(name, collection.id, type);
+  }
+
   token.setValueForMode(modeId, value);
   return token;
 }
@@ -20,9 +54,48 @@ function createVariable(collection, modeId, key, valueKey, tokens) {
   });
 }
 
-function importJSONFile({ fileName, body }) {
+function getExistingCollectionsAndModes() {
+  let collections = {};
+  figma.clientStorage.getAsync("lastCollectionId").then((data) => {
+    const lastCollectionId = data;
+    let lastCollectionExists = false;
+    const localCollections = figma.variables.getLocalVariableCollections();
+
+    for (let collection of localCollections) {
+      // NOTE: DOING THIS SINCE COLLECTION PROPS ARENT ON OWN PROPERTIES
+      if (collection.id === lastCollectionId) {
+        lastCollectionExists = true;
+      }
+      collections[collection.name] = {
+        name: collection.name,
+        id: collection.id,
+        defaultModeId: collection.defaultModeId,
+        modes: collection.modes,
+      };
+    }
+
+    figma.ui.postMessage({
+      type: "LOAD_COLLECTIONS",
+      collections: Object(collections),
+      lastCollectionId: lastCollectionExists ? lastCollectionId : null,
+    });
+  });
+}
+
+function importJSONFile({ selectedCollection, selectedMode, body }) {
   const json = JSON.parse(body);
-  const { collection, modeId } = createCollection(fileName);
+  console.log("IMPORT");
+  const { collection, modeId } = createCollection(
+    selectedCollection,
+    selectedMode
+  );
+
+  figma.clientStorage
+    .setAsync("lastCollectionId", collection.id)
+    .then((result) => {
+      console.log(`SAVED COLLECTION ID: ${collection.id}`);
+    });
+
   const aliases = {};
   const tokens = {};
   Object.entries(json).forEach(([key, object]) => {
@@ -165,8 +238,9 @@ function processCollection({ name, modes, variableIds }) {
 figma.ui.onmessage = (e) => {
   console.log("code received message", e);
   if (e.type === "IMPORT") {
-    const { fileName, body } = e;
-    importJSONFile({ fileName, body });
+    const { selectedCollection, selectedMode, body } = e;
+    importJSONFile({ selectedCollection, selectedMode, body });
+    // TODO: update plugin data after import - i.e. maintain state
   } else if (e.type === "EXPORT") {
     exportToJSON();
   }
@@ -177,6 +251,7 @@ if (figma.command === "import") {
     height: 500,
     themeColors: true,
   });
+  getExistingCollectionsAndModes();
 } else if (figma.command === "export") {
   figma.showUI(__uiFiles__["export"], {
     width: 500,
