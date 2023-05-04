@@ -54,30 +54,21 @@ function createVariable(
 }
 
 function getExistingCollectionsAndModes() {
-  let collections = {};
-  figma.clientStorage.getAsync("lastCollectionId").then((data) => {
-    const lastCollectionId = data;
-    let lastCollectionExists = false;
-    const localCollections = figma.variables.getLocalVariableCollections();
-
-    for (let collection of localCollections) {
-      // NOTE: DOING THIS SINCE COLLECTION PROPS ARENT ON OWN PROPERTIES
-      if (collection.id === lastCollectionId) {
-        lastCollectionExists = true;
-      }
-      collections[collection.name] = {
+  const collections = figma.variables
+    .getLocalVariableCollections()
+    .reduce((into, collection) => {
+      into[collection.name] = {
         name: collection.name,
         id: collection.id,
         defaultModeId: collection.defaultModeId,
         modes: collection.modes,
       };
-    }
+      return into;
+    }, {});
 
-    figma.ui.postMessage({
-      type: "LOAD_COLLECTIONS",
-      collections: Object(collections),
-      lastCollectionId: lastCollectionExists ? lastCollectionId : null,
-    });
+  figma.ui.postMessage({
+    type: "LOAD_COLLECTIONS",
+    collections,
   });
 }
 
@@ -89,12 +80,6 @@ function importJSONFile({ selectedCollection, selectedMode, body }) {
     selectedMode
   );
   const variableMap = loadExistingVariableMap();
-
-  figma.clientStorage
-    .setAsync("lastCollectionId", collection.id)
-    .then((result) => {
-      console.log(`SAVED COLLECTION ID: ${collection.id}`);
-    });
 
   const aliases = {};
   const tokens = {};
@@ -270,7 +255,7 @@ figma.ui.onmessage = (e) => {
   if (e.type === "IMPORT") {
     const { selectedCollection, selectedMode, body } = e;
     importJSONFile({ selectedCollection, selectedMode, body });
-    // TODO: update plugin data after import - i.e. maintain state
+    getExistingCollectionsAndModes();
   } else if (e.type === "EXPORT") {
     exportToJSON();
   }
