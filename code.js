@@ -26,17 +26,9 @@ function createCollection(selectedCollection, selectedMode) {
   return { collection, modeId };
 }
 
-function createToken(collection, modeId, type, name, value) {
-  const localVariables = figma.variables.getLocalVariables();
-  let token = undefined;
-  for (const variable of localVariables) {
-    if (
-      variable.name === name &&
-      variable.variableCollectionId === collection.id
-    ) {
-      token = figma.variables.getVariableById(variable.id);
-    }
-  }
+function createToken(variableMap, collection, modeId, type, name, value) {
+  const existingCollection = variableMap[collection.id];
+  let token = existingCollection ? existingCollection[name] : null;
 
   if (!token) {
     token = figma.variables.createVariable(name, collection.id, type);
@@ -46,9 +38,16 @@ function createToken(collection, modeId, type, name, value) {
   return token;
 }
 
-function createVariable(collection, modeId, key, valueKey, tokens) {
+function createVariable(
+  variableMap,
+  collection,
+  modeId,
+  key,
+  valueKey,
+  tokens
+) {
   const token = tokens[valueKey];
-  return createToken(collection, modeId, token.resolvedType, key, {
+  return createToken(variableMap, collection, modeId, token.resolvedType, key, {
     type: "VARIABLE_ID",
     id: `${token.id}`,
   });
@@ -89,6 +88,7 @@ function importJSONFile({ selectedCollection, selectedMode, body }) {
     selectedCollection,
     selectedMode
   );
+  const variableMap = loadExistingVariableMap();
 
   figma.clientStorage
     .setAsync("lastCollectionId", collection.id)
@@ -100,6 +100,7 @@ function importJSONFile({ selectedCollection, selectedMode, body }) {
   const tokens = {};
   Object.entries(json).forEach(([key, object]) => {
     traverseToken({
+      variableMap,
       collection,
       modeId,
       type: json.$type,
@@ -109,10 +110,21 @@ function importJSONFile({ selectedCollection, selectedMode, body }) {
       aliases,
     });
   });
-  processAliases({ collection, modeId, aliases, tokens });
+  processAliases({ variableMap, collection, modeId, aliases, tokens });
 }
 
-function processAliases({ collection, modeId, aliases, tokens }) {
+function loadExistingVariableMap() {
+  const variables = figma.variables.getLocalVariables();
+  const map = {};
+  variables.forEach((variable) => {
+    map[variable.variableCollectionId] =
+      map[variable.variableCollectionId] || {};
+    map[variable.variableCollectionId][variable.name] = variable;
+  });
+  return map;
+}
+
+function processAliases({ variableMap, collection, modeId, aliases, tokens }) {
   aliases = Object.values(aliases);
   let generations = aliases.length;
   while (aliases.length && generations > 0) {
@@ -121,7 +133,14 @@ function processAliases({ collection, modeId, aliases, tokens }) {
       const token = tokens[valueKey];
       if (token) {
         aliases.splice(i, 1);
-        tokens[key] = createVariable(collection, modeId, key, valueKey, tokens);
+        tokens[key] = createVariable(
+          variableMap,
+          collection,
+          modeId,
+          key,
+          valueKey,
+          tokens
+        );
       }
     }
     generations--;
@@ -133,6 +152,7 @@ function isAlias(value) {
 }
 
 function traverseToken({
+  variableMap,
   collection,
   modeId,
   type,
@@ -153,7 +173,14 @@ function traverseToken({
         .replace(/\./g, "/")
         .replace(/[\{\}]/g, "");
       if (tokens[valueKey]) {
-        tokens[key] = createVariable(collection, modeId, key, valueKey, tokens);
+        tokens[key] = createVariable(
+          variableMap,
+          collection,
+          modeId,
+          key,
+          valueKey,
+          tokens
+        );
       } else {
         aliases[key] = {
           key,
@@ -163,6 +190,7 @@ function traverseToken({
       }
     } else if (type === "color") {
       tokens[key] = createToken(
+        variableMap,
         collection,
         modeId,
         "COLOR",
@@ -171,6 +199,7 @@ function traverseToken({
       );
     } else if (type === "number") {
       tokens[key] = createToken(
+        variableMap,
         collection,
         modeId,
         "FLOAT",
@@ -184,6 +213,7 @@ function traverseToken({
     Object.entries(object).forEach(([key2, object2]) => {
       if (key2.charAt(0) !== "$") {
         traverseToken({
+          variableMap,
           collection,
           modeId,
           type,
