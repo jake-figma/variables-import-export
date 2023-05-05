@@ -12,6 +12,5 @@
   "ui": { "import": "import.html", "export": "export.html" },
   "networkAccess": {
     "allowedDomains": ["none"]
-  },
-  "enableProposedApi": true
+  }
 }
