@@ -33,7 +33,6 @@ function createToken(variableMap, collection, modeId, type, name, value) {
   if (!token) {
     token = figma.variables.createVariable(name, collection.id, type);
   }
-
   token.setValueForMode(modeId, value);
   return token;
 }
@@ -48,7 +47,7 @@ function createVariable(
 ) {
   const token = tokens[valueKey];
   return createToken(variableMap, collection, modeId, token.resolvedType, key, {
-    type: "VARIABLE_ID",
+    type: "VARIABLE_ALIAS",
     id: `${token.id}`,
   });
 }
@@ -228,7 +227,7 @@ function processCollection({ name, modes, variableIds }) {
     variableIds.forEach((variableId) => {
       const { name, resolvedType, valuesByMode } =
         figma.variables.getVariableById(variableId);
-      const value = valuesByMode[mode.modeID];
+      const value = valuesByMode[mode.modeId];
       if (value !== undefined && ["COLOR", "FLOAT"].includes(resolvedType)) {
         let obj = file.body;
         name.split("/").forEach((groupName) => {
@@ -236,7 +235,7 @@ function processCollection({ name, modes, variableIds }) {
           obj = obj[groupName];
         });
         obj.$type = resolvedType === "COLOR" ? "color" : "number";
-        if (value.type === "VARIABLE_ID") {
+        if (value.type === "VARIABLE_ALIAS") {
           obj.$value = `{${figma.variables
             .getVariableById(value.id)
             .name.replace(/\//g, ".")}}`;
