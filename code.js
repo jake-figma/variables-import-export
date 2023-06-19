@@ -21,7 +21,7 @@ function createCollection(selectedCollection, selectedMode) {
   const collection = figma.variables.createVariableCollection(
     selectedCollection.name
   );
-  const modeId = collection.modes[0].modeID;
+  const modeId = collection.modes[0].modeId;
   collection.renameMode(modeId, selectedMode.name);
   return { collection, modeId };
 }
